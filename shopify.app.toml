@@ -1,0 +1,87 @@
+# shopify.app.toml
+# This file is the source of truth for your app configuration.
+# It replaces the old manual approach of registering apps in the Partner Dashboard.
+# See: https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "PaidYET Payment Gateway"
+client_id = "YOUR_CLIENT_ID_HERE"  # Replace after: shopify app config link
+
+[build]
+  automatically_update_urls_on_dev = true
+  dev_store_url = "YOUR_DEV_STORE.myshopify.com"  # Replace with your dev store
+
+[access_scopes]
+  # REQUIREMENT 5.2.4: Payment apps must ONLY use the Payments Apps API 
+  # and mandatory webhooks — no other Admin API scopes are permitted.
+  scopes = ""
+
+[auth]
+  redirect_urls = [
+    "https://YOUR_APP_URL/auth/callback",
+    "https://YOUR_APP_URL/auth/shopify/callback",
+    "https://YOUR_APP_URL/api/auth/callback"
+  ]
+
+[webhooks]
+  api_version = "2025-01"
+
+  # REQUIREMENT: Mandatory webhooks — required for all apps
+  [[webhooks.subscriptions]]
+    topics = ["app/uninstalled"]
+    uri = "/webhooks"
+
+  [[webhooks.subscriptions]]
+    topics = ["customers/data_request"]
+    uri = "/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+    topics = ["customers/redact"]
+    uri = "/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+    topics = ["shop/redact"]
+    uri = "/webhooks/shop/redact"
+
+[app_proxy]
+  # No app proxy needed — payment apps are standalone (Req 5.2.5)
+
+[pos]
+  embedded = false
+
+# REQUIREMENT 5.2.5: Payment apps must be STANDALONE, not embedded.
+# The embedded flag must be false for payment apps.
+[embedded]
+  embedded = false
+
+# ─── Payments Extension ──────────────────────────────────────────────────────
+# REQUIREMENT 1.1.7: Must use the Payments Apps API (offsite extension type)
+# REQUIREMENT 5.2.3: Must redirect from Shopify checkout → payment flow → back
+[[extensions]]
+  type = "payments_extension"
+  name = "PaidYET Offsite Gateway"
+  handle = "paidyet-offsite-gateway"
+
+  [extensions.targeting]
+    # Offsite: customer is redirected to PaidYET-hosted payment page
+    type = "offsite"
+
+  [extensions.settings]
+    api_version = "2024-07"
+
+    # URLs that Shopify will POST to for each payment session lifecycle
+    # These correspond to routes in app/routes/
+    payment_session_url = "/api/payment_session"
+    refund_session_url  = "/api/refund_session"
+    capture_session_url = "/api/capture_session"
+    void_session_url    = "/api/void_session"
+
+    # REQUIREMENT 5.2.11: Test mode must be available
+    supports_oversell_protection = true
+    supports_3ds               = false
+    multiple_capture           = false
+    supported_buyer_contexts = [
+      { currency = "USD", countries = ["US"] },
+      { currency = "CAD", countries = ["CA"] },
+      { currency = "GBP", countries = ["GB"] },
+      { currency = "EUR", countries = ["DE", "FR", "ES", "IT", "NL"] }
+    ]

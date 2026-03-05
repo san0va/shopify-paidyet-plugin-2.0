@@ -1,0 +1,62 @@
+// prisma/schema.prisma
+// Shopify session storage via Prisma adapter
+// Required for OAuth token persistence (Req 2.3.2 - authenticate immediately after install)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id          String    @id
+  shop        String
+  state       String
+  isOnline    Boolean   @default(false)
+  scope       String?
+  expires     DateTime?
+  accessToken String
+  userId      BigInt?
+  firstName   String?
+  lastName    String?
+  email       String?
+  accountOwner Boolean  @default(false)
+  locale      String?
+  collaborator Boolean? @default(false)
+  emailVerified Boolean? @default(false)
+}
+
+// Tracks payment sessions for idempotency and retry policy
+// Required by Shopify: payments must be idempotent (Req 5.2.3)
+model PaymentSession {
+  id          String   @id              // Shopify GID (gid://shopify/PaymentSession/…)
+  gid         String   @unique
+  group       String
+  test        Boolean  @default(false)  // Req 5.2.11 — test mode
+  merchantShop String                   // which shop owns this session
+  amount      String
+  currency    String
+  status      String   @default("PENDING") // PENDING | RESOLVED | REJECTED
+  paidYetTxId String?                   // PaidYET transaction_id after processing
+  redirectUrl String?                   // URL Shopify gave us to send buyer back
+  cancelUrl   String?                   // Req 5.2.6 — cancel/abandon support
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Tracks refund sessions
+model RefundSession {
+  id          String   @id
+  gid         String   @unique
+  paymentId   String
+  amount      String
+  currency    String
+  merchantShop String
+  status      String   @default("PENDING")
+  paidYetRefundId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
