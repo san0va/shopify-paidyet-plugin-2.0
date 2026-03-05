@@ -37,9 +37,6 @@ Shopify Order Confirmation Page    ← buyer lands here on success
 ## Prerequisites
 
 - Node.js ≥ 18.20.0
-- [Shopify Partner account](https://partners.shopify.com)
-- Approved as a **Payments Partner** (required before listing — Shopify Req 1.1.7)
-  → Apply at: https://shopify.dev/docs/apps/build/payments
 - PaidYET merchant account with API credentials
 
 ---
